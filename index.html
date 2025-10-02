@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Edukasi</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+
+    .active {
+      display: block;
+    }
+
+    /* Start Screen */
+    #startScreen input, #startScreen select, #startScreen button {
+      margin: 5px;
+      padding: 8px;
+    }
+
+    /* Map Screen */
+    #map {
+      position: relative;
+      width: 600px;
+      height: 400px;
+      margin: 0 auto;
+      background: url("assets/map.jpg") no-repeat center/cover;
+      border: 3px solid #333;
+    }
+
+    .character {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      transition: all 1s linear;
+    }
+
+    .label {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      top: -20px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    /* Spin Wheel */
+    #wheel {
+      width: 300px;
+      transition: transform 3s ease-out;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen active">
+    <h1>Masukkan Nama Tim & Pilih Karakter</h1>
+    <input type="text" id="teamName" placeholder="Nama Tim">
+    <select id="characterSelect">
+      <option value="anis.PNG">Anis</option>
+      <option value="mangka.PNG">Mangka</option>
+      <option value="nana.PNG">Nana</option>
+      <option value="pukat.PNG">Pukat</option>
+      <option value="pupu.PNG">Pupu</option>
+    </select>
+    <button onclick="addTeam()">Tambah Tim</button>
+    <button onclick="startGame()">Mulai Game</button>
+    <div id="teamList"></div>
+  </div>
+
+  <!-- Map Screen -->
+  <div id="mapScreen" class="screen">
+    <h2>Peta Permainan</h2>
+    <div id="map"></div>
+    <button onclick="toSpin()">Giliran Spin</button>
+  </div>
+
+  <!-- Spin Screen -->
+  <div id="spinScreen" class="screen">
+    <h2>Spin Wheel - <span id="activeTeamName"></span></h2>
+    <img id="wheel" src="assets/spin.jpg" alt="Spin Wheel">
+    <br>
+    <button onclick="spin()">Spin!</button>
+    <div id="result"></div>
+    <div id="afterSpin" style="display:none;">
+      <p>Masukkan saldo yang diperoleh:</p>
+      <input type="number" id="saldoInput" value="0">
+      <button onclick="updateSaldo()">Selesai</button>
+    </div>
+  </div>
+
+  <script>
+    let teams = [];
+    let activeTeam = 0;
+    let spinning = false;
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function addTeam() {
+      let name = document.getElementById("teamName").value;
+      let char = document.getElementById("characterSelect").value;
+      if (!name) return alert("Masukkan nama tim dulu!");
+      if (teams.length >= 5) return alert("Maksimal 5 tim!");
+
+      teams.push({name, char, saldo: 0, x: 20 + teams.length*60, y: 300});
+      document.getElementById("teamList").innerHTML = teams.map(t => `<p>${t.name} (${t.char})</p>`).join("");
+      document.getElementById("teamName").value = "";
+    }
+
+    function startGame() {
+      if (teams.length === 0) return alert("Minimal 1 tim dulu!");
+      showScreen("mapScreen");
+      renderMap();
+    }
+
+    function renderMap() {
+      let map = document.getElementById("map");
+      map.innerHTML = "";
+      teams.forEach(t => {
+        let div = document.createElement("div");
+        div.className = "character";
+        div.style.left = t.x + "px";
+        div.style.top = t.y + "px";
+        div.innerHTML = `<div class="label">${t.name}</div><img src="assets/${t.char}" width="50">`;
+        map.appendChild(div);
+        t.el = div;
+      });
+    }
+
+    function toSpin() {
+      document.getElementById("activeTeamName").innerText = teams[activeTeam].name;
+      showScreen("spinScreen");
+    }
+
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      let wheel = document.getElementById("wheel");
+      let deg = Math.floor(2000 + Math.random() * 2000); // random putaran
+      wheel.style.transform = `rotate(${deg}deg)`;
+      setTimeout(() => {
+        document.getElementById("result").innerText = "Silakan ambil kartu tantangan!";
+        document.getElementById("afterSpin").style.display = "block";
+        spinning = false;
+      }, 3000);
+    }
+
+    function updateSaldo() {
+      let saldo = parseInt(document.getElementById("saldoInput").value);
+      teams[activeTeam].saldo += saldo;
+      alert(teams[activeTeam].name + " sekarang punya saldo " + teams[activeTeam].saldo);
+
+      // contoh: kalau saldo >= 50 bisa maju
+      if (teams[activeTeam].saldo >= 50) {
+        moveCharacter(teams[activeTeam], 20 + Math.random()*500, 100);
+      }
+
+      // next team
+      activeTeam = (activeTeam + 1) % teams.length;
+      showScreen("mapScreen");
+    }
+
+    function moveCharacter(team, newX, newY) {
+      team.x = newX;
+      team.y = newY;
+      team.el.style.left = newX + "px";
+      team.el.style.top = newY + "px";
+    }
+  </script>
+</body>
+</html>
